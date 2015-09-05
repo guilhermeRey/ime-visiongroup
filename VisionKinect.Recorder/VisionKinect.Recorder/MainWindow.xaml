@@ -1,0 +1,30 @@
+﻿<Window x:Class="VisionKinect.Recorder.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MainWindow" Height="330" Width="550">
+    <StackPanel>
+        <Canvas Panel.ZIndex="2" Background="White">
+            <Border Canvas.Top="10" Canvas.Left="10" BorderBrush="BlanchedAlmond" BorderThickness="10">
+                <StackPanel  Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Height="30" Width="30" Name="BtnRecord" Click="BtnRecord_Click">
+                        <Ellipse Height="20" Width="20" Fill="Red"/>
+                    </Button>
+                    <Button Height="30" Width="30" Name="BtnStop" IsEnabled="False" Click="BtnStop_Click">
+                        <Rectangle Height="20" Width="20" Fill="Black"/>
+                    </Button>
+                    <Label Name="LblState" Background="White">
+                        IDLE
+                    </Label>
+                    <Label Name="LblCloudMessage" Background="White" Padding="30 5 0 0">
+                        -
+                    </Label>
+                </StackPanel>
+            </Border>
+        </Canvas>
+        <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+            <Grid>
+                <Image Source="{Binding ImageSource}" Stretch="UniformToFill" />
+            </Grid>
+        </Grid>
+    </StackPanel>
+</Window>
