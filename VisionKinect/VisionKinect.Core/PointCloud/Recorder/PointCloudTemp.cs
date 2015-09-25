@@ -49,9 +49,10 @@ namespace VisionKinect.Core.PointCloud.Recorder
         public IEnumerable<PointCloudTemp> ProcessCloud()
         {
             int pointsFoundInFrame = 0;
-            int step = 1;
+            int step = 1, width = 0, height = 0;
             for (int y = 0; y < DepthHeight; y += step)
             {
+                height++;
                 for (int x = 0; x < DepthWidth; x += step)
                 {
                     // calculate index into depth array
@@ -79,12 +80,15 @@ namespace VisionKinect.Core.PointCloud.Recorder
                         this.XYZ = new Tuple<float, float, float>(p.X, p.Y, p.Z);
                         this.RGB = new Tuple<int, int, int>(r, g, b);
                         pointsFoundInFrame++;
+                        width++;
 
                         yield return this;
                     };
                 }
             }
             this.PointCount = pointsFoundInFrame;
+            this.DepthHeight = height;
+            this.DepthWidth = width;
             // Debug.WriteLine("Frame " + Id + ", points: " + pointsFoundInFrame);
         }
     }

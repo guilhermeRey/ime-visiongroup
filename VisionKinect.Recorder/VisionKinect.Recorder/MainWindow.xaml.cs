@@ -101,6 +101,7 @@ namespace VisionKinect.Recorder
             #endregion
 
             this.Recorder = new PointCloudRecorder(ConfigurationManager.AppSettings["RecordFolder"], new PCL());
+            this.Recorder.RecordRGB = false;
             this.Recorder.StateChanged += Recorder_StateChanged;
             this.Recorder.Stopped += Recorder_Stopped;
             this.Recorder.CloudProcessed += Recorder_CloudProcessed;
@@ -257,6 +258,14 @@ namespace VisionKinect.Recorder
             this.Recorder.Stop();
             
             this.BtnStop.IsEnabled = false;
+        }
+
+        private void checkRGB_Checked(object sender, RoutedEventArgs e)
+        {
+            if (this.Recorder.RecorderState == PointCloudRecorderState.Idle)
+                this.Recorder.RecordRGB = checkRGB.IsChecked.Value;
+            else
+                System.Windows.MessageBox.Show("Cannot change this in state " + this.Recorder.RecorderState.ToString(), "Info");
         }
     }
 }

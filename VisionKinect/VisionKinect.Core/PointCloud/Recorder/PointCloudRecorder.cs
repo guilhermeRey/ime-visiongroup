@@ -45,6 +45,8 @@ namespace VisionKinect.Core.PointCloud.Recorder
         /// 
         /// </summary>
         BackgroundWorker PostProcessingThread { get; set; }
+
+        public bool RecordRGB { get; set; }
         #endregion
 
         #region #    Mutex    #
@@ -169,14 +171,14 @@ namespace VisionKinect.Core.PointCloud.Recorder
                     using (var writer = new StreamWriter(tempfile))
                     {
                         foreach (PointCloudTemp temp in tempCloud.ProcessCloud())
-                            writer.Write(this.ZipWriter.FileType.FormatLine(temp.Id, temp.XYZ, temp.RGB));
+                            writer.Write(this.ZipWriter.FileType.FormatLine(temp.Id, temp.XYZ, this.RecordRGB ? temp.RGB : null));
                     }
 
                     ZipArchiveEntry entry = this.ZipWriter.Archive.CreateEntry("frame-" + tempCloud.Id + "." + this.ZipWriter.FileType.Extension());
                     using (StreamWriter entryWriter = new StreamWriter(entry.Open()))
                     {
                         string fileHeader = this.ZipWriter.FileType.Header(tempCloud);
-                        entryWriter.WriteLine(fileHeader);
+                        entryWriter.Write(fileHeader);
 
                         using (var reader = new StreamReader(tempfile))
                         {

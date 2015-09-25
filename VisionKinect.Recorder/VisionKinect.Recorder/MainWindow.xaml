@@ -12,6 +12,12 @@
                     <Button Height="30" Width="30" Name="BtnStop" IsEnabled="False" Click="BtnStop_Click">
                         <Rectangle Height="20" Width="20" Fill="Black"/>
                     </Button>
+                    <Label Background="White"></Label>
+                    <CheckBox Background="White" IsChecked="True" Click="checkRGB_Checked" Name="checkRGB" Height="15">
+                        Use RGB
+                    </CheckBox>
+                    <Label Background="White" Name="lblTemp">|</Label>
+                    <Label Background="White" Name="lblCurrentStatus">Current Status:</Label>
                     <Label Name="LblState" Background="White">
                         IDLE
                     </Label>

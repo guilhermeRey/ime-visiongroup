@@ -52,6 +52,7 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Cultures.cs" />
     <Compile Include="Interop\Core\MultiSourceStreamable.cs" />
     <Compile Include="Interop\Core\RGBStreamable.cs" />
     <Compile Include="Interop\Core\SensorStream.cs" />

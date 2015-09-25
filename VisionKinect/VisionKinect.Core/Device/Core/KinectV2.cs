@@ -45,10 +45,9 @@ namespace VisionKinect.Core.Device
             this.Sensor.Open();
         }
 
-
         public object OpenMultiFrame()
         {
-            return this.Sensor.OpenMultiSourceFrameReader(FrameSourceTypes.Depth | FrameSourceTypes.Color | FrameSourceTypes.BodyIndex);
+            return this.Sensor.OpenMultiSourceFrameReader(FrameSourceTypes.Depth | FrameSourceTypes.Color);
         }
     }
 }
