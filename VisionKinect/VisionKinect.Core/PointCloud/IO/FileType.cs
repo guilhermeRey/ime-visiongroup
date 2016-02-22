@@ -9,7 +9,7 @@ namespace VisionKinect.Core.IO.FileTypes
     public interface FileType
     {
         string Extension();
-        string Header(PointCloudTemp temp);
+        string Header(PointCloudTemp temp, PointCloudRecorderOptions options);
         string FormatLine(int id, Tuple<float, float, float> xyz, Tuple<int, int, int> rgb);
     }
 }

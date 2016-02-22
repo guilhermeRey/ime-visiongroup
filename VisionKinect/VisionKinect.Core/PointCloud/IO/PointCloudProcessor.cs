@@ -16,7 +16,7 @@ namespace VisionKinect.Core.PointCloud.IO
             return "clouds";
         }
 
-        string FileType.Header(PointCloudTemp temp)
+        string FileType.Header(PointCloudTemp temp, PointCloudRecorderOptions options)
         {
             return "";
         }

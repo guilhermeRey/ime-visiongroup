@@ -14,7 +14,7 @@ namespace VisionKinect.Core.IO.FileTypes
             return "ply";
         }
 
-        public string Header(PointCloudTemp temp)
+        public string Header(PointCloudTemp temp, PointCloudRecorderOptions options)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("ply");

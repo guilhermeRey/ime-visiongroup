@@ -166,6 +166,10 @@ namespace VisionKinect.Core.PointCloud.Recorder
                 if (this.TempClouds.Count > 0 && this.TempClouds.Peek() != null)
                 {
                     PointCloudTemp tempCloud = this.TempClouds.Pop();
+                    PointCloudRecorderOptions options = new PointCloudRecorderOptions()
+                    {
+                        RecordRGB = this.RecordRGB
+                    };
 
                     string tempfile = Path.GetTempFileName();
                     using (var writer = new StreamWriter(tempfile))
@@ -177,7 +181,7 @@ namespace VisionKinect.Core.PointCloud.Recorder
                     ZipArchiveEntry entry = this.ZipWriter.Archive.CreateEntry("frame-" + tempCloud.Id + "." + this.ZipWriter.FileType.Extension());
                     using (StreamWriter entryWriter = new StreamWriter(entry.Open()))
                     {
-                        string fileHeader = this.ZipWriter.FileType.Header(tempCloud);
+                        string fileHeader = this.ZipWriter.FileType.Header(tempCloud, options);
                         entryWriter.Write(fileHeader);
 
                         using (var reader = new StreamReader(tempfile))

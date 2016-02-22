@@ -15,15 +15,26 @@ namespace VisionKinect.Core.PointCloud.IO
             return "pcd";
         }
 
-        public string Header(PointCloudTemp temp)
+        public string Header(PointCloudTemp temp, PointCloudRecorderOptions options)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("# .PCD v.7 - Point Cloud Data file format");
             sb.AppendLine("VERSION .7");
-            sb.AppendLine("FIELDS x y z rgb");
-            sb.AppendLine("SIZE 4 4 4 4");
-            sb.AppendLine("TYPE F F F F");
-            sb.AppendLine("COUNT 1 1 1 1");
+            if (!options.RecordRGB)
+            {
+                sb.AppendLine("FIELDS x y z");
+                sb.AppendLine("SIZE 4 4 4");
+                sb.AppendLine("TYPE F F F");
+                sb.AppendLine("COUNT 1 1 1");
+            }
+            else
+            {
+                sb.AppendLine("FIELDS x y z rgb");
+                sb.AppendLine("SIZE 4 4 4 4");
+                sb.AppendLine("TYPE F F F F");
+                sb.AppendLine("COUNT 1 1 1 1");
+            }
+
             sb.AppendLine("WIDTH 1");
             sb.AppendLine("HEIGHT " + temp.PointCount);
             sb.AppendLine("VIEWPOINT 0 0 0 1 0 0 0");

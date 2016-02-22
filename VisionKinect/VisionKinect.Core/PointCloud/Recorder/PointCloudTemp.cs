@@ -59,26 +59,11 @@ namespace VisionKinect.Core.PointCloud.Recorder
                     int depthIndex = (y * DepthWidth) + x;
 
                     CameraSpacePoint p = this.cameraPoints[depthIndex];
-                    ColorSpacePoint colorPoint = this.colorPoints[depthIndex];
-
-                    byte r = 0; byte g = 0; byte b = 0;
-
-                    int colorX = (int)Math.Floor(colorPoint.X + 0.5);
-                    int colorY = (int)Math.Floor(colorPoint.Y + 0.5);
-                    if ((colorX >= 0) && (colorX < ColorWidth) && (colorY >= 0) && (colorY < ColorHeight))
-                    {
-                        int colorIndex = ((colorY * ColorWidth) + colorX) * this.bytesPerPixel;
-                        int displayIndex = depthIndex * this.bytesPerPixel;
-
-                        b = this.colorFrameData[colorIndex++];
-                        g = this.colorFrameData[colorIndex++];
-                        r = this.colorFrameData[colorIndex++];
-                    }
 
                     if (!(Double.IsInfinity(p.X)) && !(Double.IsInfinity(p.Y)) && !(Double.IsInfinity(p.Z)))
                     {
                         this.XYZ = new Tuple<float, float, float>(p.X, p.Y, p.Z);
-                        this.RGB = new Tuple<int, int, int>(r, g, b);
+                        this.RGB = ProcessColorSpace(depthIndex);
                         pointsFoundInFrame++;
                         width++;
 
@@ -90,6 +75,31 @@ namespace VisionKinect.Core.PointCloud.Recorder
             this.DepthHeight = height;
             this.DepthWidth = width;
             // Debug.WriteLine("Frame " + Id + ", points: " + pointsFoundInFrame);
+        }
+
+        public Tuple<int, int, int> ProcessColorSpace(int depthIndex)
+        {
+            if (this.colorPoints != null)
+            {
+                ColorSpacePoint colorPoint = this.colorPoints[depthIndex];
+
+                byte r = 0; byte g = 0; byte b = 0;
+
+                int colorX = (int)Math.Floor(colorPoint.X + 0.5);
+                int colorY = (int)Math.Floor(colorPoint.Y + 0.5);
+                if ((colorX >= 0) && (colorX < ColorWidth) && (colorY >= 0) && (colorY < ColorHeight))
+                {
+                    int colorIndex = ((colorY * ColorWidth) + colorX) * this.bytesPerPixel;
+                    int displayIndex = depthIndex * this.bytesPerPixel;
+
+                    b = this.colorFrameData[colorIndex++];
+                    g = this.colorFrameData[colorIndex++];
+                    r = this.colorFrameData[colorIndex++];
+
+                    return new Tuple<int, int, int>(r, g, b);
+                }
+            }
+            return null;
         }
     }
 }

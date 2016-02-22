@@ -65,8 +65,8 @@
     <Compile Include="PointCloud\IO\PCL.cs" />
     <Compile Include="PointCloud\IO\Ply.cs" />
     <Compile Include="PointCloud\IO\PointCloudProcessor.cs" />
-    <Compile Include="PointCloud\Recorder\PoincCloudPostProcessor.cs" />
     <Compile Include="PointCloud\Recorder\PointCloudRecorder.cs" />
+    <Compile Include="PointCloud\Recorder\PointCloudRecorderOptions.cs" />
     <Compile Include="PointCloud\Recorder\PointCloudRecorderState.cs" />
     <Compile Include="PointCloud\Recorder\PointCloudTemp.cs" />
     <Compile Include="PointCloud\Stream\PointCloudFileWriter.cs" />

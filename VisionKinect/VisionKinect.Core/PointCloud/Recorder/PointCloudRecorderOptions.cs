@@ -6,10 +6,8 @@ using System.Threading.Tasks;
 
 namespace VisionKinect.Core.PointCloud.Recorder
 {
-    public class PoincCloudPostProcessor
+    public class PointCloudRecorderOptions
     {
-        public string FilePath { get; set; }
-
-
+        public bool RecordRGB { get; set; }
     }
 }
