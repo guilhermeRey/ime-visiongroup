@@ -2,8 +2,14 @@
 #define NOMINMAX
 #include <Windows.h>
 #include <Kinect.h>
+#include <pcl/io/pcd_io.h>
 #include <pcl/visualization/cloud_viewer.h>
 #include <pcl/filters/passthrough.h>
+#include <pcl/filters/statistical_outlier_removal.h>
+#include <pcl/point_types.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/conversions.h>
+#include <pcl/point_types_conversion.h>
 #include "Point3D.h"
 #include "Cube.h"
 
@@ -109,16 +115,25 @@ int _tmain(int argc, _TCHAR* argv[])
 
 	Cube cube = Cube();
 	cube.points = {
-		Point3D(1, 2, 3),
-		Point3D(1, 2, 3),
-		Point3D(1, 2, 3),
-		Point3D(1, 2, 3),
-		Point3D(1, 2, 3),
-		Point3D(1, 2, 3),
-		Point3D(1, 2, 3),
-		Point3D(1, 2, 3)
+		Point3D(-0.12, 0.089, -0.009),
+		Point3D(0.25, 0.089, -0.009),
+		Point3D(-0.12, -0.25, -0.009),
+		Point3D(0.25, -0.25, -0.009),
+
+		Point3D(-0.12, 0.089, 0.870001),
+		Point3D(0.25, 0.089,  0.870001),
+		Point3D(-0.12, -0.25, 0.870001),
+		Point3D(0.25, -0.25,  0.870001),
 	};
+
+	float x_1 = -0.12, x_2 = 0.25;
+	float y_1 = -0.25, y_2 = 0.089;
+	float z_1 = -0.009, z_2 = 0.870001;
+	float step = 0.01;
 	
+	int nK = 25, kStep = 1;
+	bool log = false;
+
 	while (!viewer.wasStopped()){
 		// Acquire Latest Color Frame
 		IColorFrame* pColorFrame = nullptr;
@@ -146,7 +161,7 @@ int _tmain(int argc, _TCHAR* argv[])
 
 		// Create Point Cloud
 		pcl::PointCloud<pcl::PointXYZ>::Ptr pointcloud(new pcl::PointCloud<pcl::PointXYZ>());
-		pcl::PointCloud<pcl::PointXYZ>::Ptr cloudFiltered(new pcl::PointCloud<pcl::PointXYZ>());
+
 		pointcloud->width = static_cast<uint32_t>(depthWidth);
 		pointcloud->height = static_cast<uint32_t>(depthHeight);
 		pointcloud->is_dense = true;
@@ -158,17 +173,6 @@ int _tmain(int argc, _TCHAR* argv[])
 				DepthSpacePoint depthSpacePoint = { static_cast<float>(x), static_cast<float>(y) };
 				UINT16 depth = depthBuffer[y * depthWidth + x];
 
-				// Coordinate Mapping Depth to Color Space, and Setting PointCloud RGB
-				/*ColorSpacePoint colorSpacePoint = { 0.0f, 0.0f };
-				pCoordinateMapper->MapDepthPointToColorSpace(depthSpacePoint, depth, &colorSpacePoint);
-				int colorX = static_cast<int>(std::floor(colorSpacePoint.X + 0.5f));
-				int colorY = static_cast<int>(std::floor(colorSpacePoint.Y + 0.5f));
-				if ((0 <= colorX) && (colorX < colorWidth) && (0 <= colorY) && (colorY < colorHeight)){
-					RGBQUAD color = colorBuffer[colorY * colorWidth + colorX];
-					point.b = 255;
-					point.g = 255;
-					point.r = 255;
-				}*/
 
 				// Coordinate Mapping Depth to Camera Space, and Setting PointCloud XYZ
 				CameraSpacePoint cameraSpacePoint = { 0.0f, 0.0f, 0.0f };
@@ -177,26 +181,144 @@ int _tmain(int argc, _TCHAR* argv[])
 					point.x = cameraSpacePoint.X;
 					point.y = cameraSpacePoint.Y;
 					point.z = cameraSpacePoint.Z;
-				}*/
+					}*/
 
 				point.x = cameraSpacePoint.X;
 				point.y = cameraSpacePoint.Y;
 				point.z = cameraSpacePoint.Z;
 
-				pointcloud->push_back(point);
+				Point3D aux = Point3D(point.x, point.y, point.z);
+				if (point.x >= x_1 && point.x <= x_2 &&
+					point.y >= y_1 && point.y <= y_2 &&
+					point.z >= z_1 && point.z <= 2) {
+					if (log) {
+						cout << aux._x;
+						cout << ", ";
+						cout << aux._y;
+						cout << ", ";
+						cout << aux._z;
+						cout << ", ";
+					}
+					pointcloud->push_back(point);
+				}
 			}
 		}
 
-		// Create the filtering object
-		pcl::PassThrough<pcl::PointXYZ> pass;
-		pass.setInputCloud(pointcloud);
-		pass.setFilterFieldName("z");
-		pass.setFilterLimits(0.0, 0.75);
-		pass.filter(*cloudFiltered);
-		
+		/*
+			X filters limits:
+				V: 0x56
+				B: 0x42
+			Y filters limits:
+				A: 0x41
+				S: 0x53
+			Z filter limits:
+				Z: 0x5A
+				X: 0x58
+			*/
 
-		// Show Point Cloud on Cloud Viewer
-		viewer.showCloud(cloudFiltered);
+		if (GetAsyncKeyState(0x56) & 0x8000) {
+			if (GetAsyncKeyState(VK_SHIFT))
+				x_1 -= step;
+			else
+				x_1 += step;
+		}
+		if (GetAsyncKeyState(0x42) & 0x8000) {
+			if (GetAsyncKeyState(VK_SHIFT))
+				x_2 -= step;
+			else
+				x_2 += step;
+		}
+
+		if (GetAsyncKeyState(0x41) & 0x8000) {
+			if (GetAsyncKeyState(VK_SHIFT))
+				y_1 -= step;
+			else
+				y_1 += step;
+		}
+		if (GetAsyncKeyState(0x53) & 0x8000) {
+			if (GetAsyncKeyState(VK_SHIFT))
+				y_2 -= step;
+			else
+				y_2 += step;
+		}
+
+		if (GetAsyncKeyState(0x5A) & 0x8000) {
+			if (GetAsyncKeyState(VK_SHIFT))
+				z_1 -= step;
+			else
+				z_1 += step;
+		}
+		if (GetAsyncKeyState(0x58) & 0x8000) {
+			if (GetAsyncKeyState(VK_SHIFT))
+				z_2 -= step;
+			else
+				z_2 += step;
+		}
+
+		if (GetAsyncKeyState(0x4E)) { // N
+			if (GetAsyncKeyState(VK_SHIFT))
+				nK -= kStep;
+			else
+				nK += kStep;
+		}
+
+		if (GetAsyncKeyState(VK_SPACE)) {
+			log = !log;
+		}
+
+		if (GetAsyncKeyState(0x44)) {
+			cout << "x: ";
+			cout << x_1;
+			cout << ", ";
+			cout << x_2;
+			cout << "  y: ";
+			cout << y_1;
+			cout << ", ";
+			cout << y_2;
+			cout << "  z: ";
+			cout << z_1;
+			cout << ", ";
+			cout << z_2;
+			cout << " nK: ";
+			cout << nK;
+			cout << "\n";
+		}
+
+		//pcl::PointCloud<pcl::PointXYZ>::Ptr cloudFilteredZ(new pcl::PointCloud<pcl::PointXYZ>());
+		// Create the filtering object
+		//pcl::PassThrough<pcl::PointXYZ> pass;
+		//pass.setInputCloud(pointcloud);
+		//pass.setFilterFieldName("z");
+		//pass.setFilterLimits(z_1, z_2);
+		//pass.filter(*cloudFilteredZ);
+
+		//pcl::PointCloud<pcl::PointXYZ>::Ptr cloudFilteredX(new pcl::PointCloud<pcl::PointXYZ>());
+		//pcl::PassThrough<pcl::PointXYZ> passX;
+		//passX.setInputCloud(cloudFilteredZ);
+		//passX.setFilterFieldName("x");
+		//passX.setFilterLimits(x_1, x_2);
+		//passX.filter(*cloudFilteredX);
+
+		//pcl::PointCloud<pcl::PointXYZ>::Ptr cloudFilteredY(new pcl::PointCloud<pcl::PointXYZ>());
+		//pcl::PassThrough<pcl::PointXYZ> passY;
+		//passY.setInputCloud(cloudFilteredX);
+		//passY.setFilterFieldName("y");
+		//passY.setFilterLimits(y_1, y_2);
+		//passY.filter(*cloudFilteredY);
+
+		//pcl::PCLPointCloud2::Ptr pointCloudConverted(new pcl::PCLPointCloud2());
+		//pcl::PCLPointCloud2::Ptr cloud_filtered(new pcl::PCLPointCloud2());
+		//pcl::toPCLPointCloud2(*cloudFilteredY, *pointCloudConverted);
+		//pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
+		//sor.setInputCloud(pointCloudConverted);
+		//sor.setLeafSize(0.01f, 0.01f, 0.01f);
+		//sor.filter(*cloud_filtered);
+
+
+		//pcl::PointCloud<pcl::PointXYZ>::Ptr aux(new pcl::PointCloud<pcl::PointXYZ>());
+		//pcl::fromPCLPointCloud2(*cloud_filtered, *aux);
+		//// Show Point Cloud on Cloud Viewer
+		viewer.showCloud(pointcloud);
 
 		// Input Key ( Exit ESC key )
 		if (GetKeyState(VK_ESCAPE) < 0){

@@ -9,12 +9,9 @@ Cube::Cube()
 }
 
 bool Cube::PointIn(Point3D point) {
-	Point3D min = GetMinCoords();
-	Point3D max = GetMaxCoords();
-
-	return min._x <= point._x <= max._x &&
-		min._y <= point._y <= max._y &&
-		min._z <= point._z <= max._z;
+	return _min._x <= point._x <= _max._x &&
+		_min._y <= point._y <= _max._y &&
+		_min._z <= point._z <= _max._z;
 }
 
 Point3D Cube::GetMaxCoords() {
@@ -55,4 +52,9 @@ Point3D Cube::GetMinCoords() {
 	}
 
 	return minCoordsPoint;
+}
+
+void Cube::Prepare() {
+	_min = GetMinCoords();
+	_max = GetMaxCoords();
 }
