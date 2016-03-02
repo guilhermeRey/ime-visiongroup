@@ -4,12 +4,21 @@
 #include <Kinect.h>
 #include <pcl/io/pcd_io.h>
 #include <pcl/visualization/cloud_viewer.h>
-#include <pcl/filters/passthrough.h>
 #include <pcl/filters/statistical_outlier_removal.h>
 #include <pcl/point_types.h>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/conversions.h>
 #include <pcl/point_types_conversion.h>
+#include <pcl/ModelCoefficients.h>
+#include <pcl/point_types.h>
+#include <pcl/filters/extract_indices.h>
+#include <pcl/filters/voxel_grid.h>
+#include <pcl/features/normal_3d.h>
+#include <pcl/kdtree/kdtree.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/sample_consensus/model_types.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/segmentation/extract_clusters.h>
 #include "Point3D.h"
 #include "Cube.h"
 
@@ -113,23 +122,11 @@ int _tmain(int argc, _TCHAR* argv[])
 	// Create Cloud Viewer
 	pcl::visualization::CloudViewer viewer("Point Cloud Viewer");
 
-	Cube cube = Cube();
-	cube.points = {
-		Point3D(-0.12, 0.089, -0.009),
-		Point3D(0.25, 0.089, -0.009),
-		Point3D(-0.12, -0.25, -0.009),
-		Point3D(0.25, -0.25, -0.009),
-
-		Point3D(-0.12, 0.089, 0.870001),
-		Point3D(0.25, 0.089,  0.870001),
-		Point3D(-0.12, -0.25, 0.870001),
-		Point3D(0.25, -0.25,  0.870001),
-	};
-
-	float x_1 = -0.12, x_2 = 0.25;
-	float y_1 = -0.25, y_2 = 0.089;
-	float z_1 = -0.009, z_2 = 0.870001;
-	float step = 0.01;
+	float x_1 = -0.06, x_2 = 0.21;
+	float y_1 = -0.23, y_2 = 0.049;
+	float z_1 = 0.471, z_2 = 0.870001;
+	float step = 0.001;
+	float segThreshold = 0.04;
 	
 	int nK = 25, kStep = 1;
 	bool log = false;
@@ -160,155 +157,59 @@ int _tmain(int argc, _TCHAR* argv[])
 		SafeRelease(pDepthFrame);
 
 		// Create Point Cloud
+		pcl::PointCloud<pcl::PointXYZRGB>::Ptr viewcloud(new pcl::PointCloud<pcl::PointXYZRGB>());
 		pcl::PointCloud<pcl::PointXYZ>::Ptr pointcloud(new pcl::PointCloud<pcl::PointXYZ>());
+		
 
 		pointcloud->width = static_cast<uint32_t>(depthWidth);
 		pointcloud->height = static_cast<uint32_t>(depthHeight);
-		pointcloud->is_dense = true;
+		pointcloud->is_dense = false;
 
-		for (int y = 0; y < depthHeight; y++){
-			for (int x = 0; x < depthWidth; x++){
-				pcl::PointXYZ point;
+		viewcloud->width = static_cast<uint32_t>(depthWidth);
+		viewcloud->height = static_cast<uint32_t>(depthHeight);
+		viewcloud->is_dense = false;
 
+		for (int y = 0; y < depthHeight; y++) {
+			for (int x = 0; x < depthWidth; x++) {
+				pcl::PointXYZRGB point;
 				DepthSpacePoint depthSpacePoint = { static_cast<float>(x), static_cast<float>(y) };
 				UINT16 depth = depthBuffer[y * depthWidth + x];
-
 
 				// Coordinate Mapping Depth to Camera Space, and Setting PointCloud XYZ
 				CameraSpacePoint cameraSpacePoint = { 0.0f, 0.0f, 0.0f };
 				pCoordinateMapper->MapDepthPointToCameraSpace(depthSpacePoint, depth, &cameraSpacePoint);
-				/*if ((0 <= colorX) && (colorX < colorWidth) && (0 <= colorY) && (colorY < colorHeight)){
-					point.x = cameraSpacePoint.X;
-					point.y = cameraSpacePoint.Y;
-					point.z = cameraSpacePoint.Z;
-					}*/
-
 				point.x = cameraSpacePoint.X;
 				point.y = cameraSpacePoint.Y;
 				point.z = cameraSpacePoint.Z;
-
-				Point3D aux = Point3D(point.x, point.y, point.z);
+				
 				if (point.x >= x_1 && point.x <= x_2 &&
 					point.y >= y_1 && point.y <= y_2 &&
-					point.z >= z_1 && point.z <= 2) {
-					if (log) {
-						cout << aux._x;
-						cout << ", ";
-						cout << aux._y;
-						cout << ", ";
-						cout << aux._z;
-						cout << ", ";
-					}
-					pointcloud->push_back(point);
-				}
+					point.z >= z_1 && point.z <= z_2) {
+					point.r = 155;
+					point.g = 155;
+					point.b = 155;
+
+					pcl::PointXYZ toAddPoint;
+					toAddPoint.x = point.x;
+					toAddPoint.y = point.y;
+					toAddPoint.z = point.z;
+
+					pointcloud->push_back(toAddPoint);
+					viewcloud->push_back(point);
+				}/*
+				else {
+					point.r = 55;
+					point.g = 55;
+					point.b = 55;
+				}*/
+
+				//
 			}
 		}
 
-		/*
-			X filters limits:
-				V: 0x56
-				B: 0x42
-			Y filters limits:
-				A: 0x41
-				S: 0x53
-			Z filter limits:
-				Z: 0x5A
-				X: 0x58
-			*/
-
-		if (GetAsyncKeyState(0x56) & 0x8000) {
-			if (GetAsyncKeyState(VK_SHIFT))
-				x_1 -= step;
-			else
-				x_1 += step;
-		}
-		if (GetAsyncKeyState(0x42) & 0x8000) {
-			if (GetAsyncKeyState(VK_SHIFT))
-				x_2 -= step;
-			else
-				x_2 += step;
-		}
-
-		if (GetAsyncKeyState(0x41) & 0x8000) {
-			if (GetAsyncKeyState(VK_SHIFT))
-				y_1 -= step;
-			else
-				y_1 += step;
-		}
-		if (GetAsyncKeyState(0x53) & 0x8000) {
-			if (GetAsyncKeyState(VK_SHIFT))
-				y_2 -= step;
-			else
-				y_2 += step;
-		}
-
-		if (GetAsyncKeyState(0x5A) & 0x8000) {
-			if (GetAsyncKeyState(VK_SHIFT))
-				z_1 -= step;
-			else
-				z_1 += step;
-		}
-		if (GetAsyncKeyState(0x58) & 0x8000) {
-			if (GetAsyncKeyState(VK_SHIFT))
-				z_2 -= step;
-			else
-				z_2 += step;
-		}
-
-		if (GetAsyncKeyState(0x4E)) { // N
-			if (GetAsyncKeyState(VK_SHIFT))
-				nK -= kStep;
-			else
-				nK += kStep;
-		}
-
-		if (GetAsyncKeyState(VK_SPACE)) {
-			log = !log;
-		}
-
-		if (GetAsyncKeyState(0x44)) {
-			cout << "x: ";
-			cout << x_1;
-			cout << ", ";
-			cout << x_2;
-			cout << "  y: ";
-			cout << y_1;
-			cout << ", ";
-			cout << y_2;
-			cout << "  z: ";
-			cout << z_1;
-			cout << ", ";
-			cout << z_2;
-			cout << " nK: ";
-			cout << nK;
-			cout << "\n";
-		}
-
-		//pcl::PointCloud<pcl::PointXYZ>::Ptr cloudFilteredZ(new pcl::PointCloud<pcl::PointXYZ>());
-		// Create the filtering object
-		//pcl::PassThrough<pcl::PointXYZ> pass;
-		//pass.setInputCloud(pointcloud);
-		//pass.setFilterFieldName("z");
-		//pass.setFilterLimits(z_1, z_2);
-		//pass.filter(*cloudFilteredZ);
-
-		//pcl::PointCloud<pcl::PointXYZ>::Ptr cloudFilteredX(new pcl::PointCloud<pcl::PointXYZ>());
-		//pcl::PassThrough<pcl::PointXYZ> passX;
-		//passX.setInputCloud(cloudFilteredZ);
-		//passX.setFilterFieldName("x");
-		//passX.setFilterLimits(x_1, x_2);
-		//passX.filter(*cloudFilteredX);
-
-		//pcl::PointCloud<pcl::PointXYZ>::Ptr cloudFilteredY(new pcl::PointCloud<pcl::PointXYZ>());
-		//pcl::PassThrough<pcl::PointXYZ> passY;
-		//passY.setInputCloud(cloudFilteredX);
-		//passY.setFilterFieldName("y");
-		//passY.setFilterLimits(y_1, y_2);
-		//passY.filter(*cloudFilteredY);
-
 		//pcl::PCLPointCloud2::Ptr pointCloudConverted(new pcl::PCLPointCloud2());
 		//pcl::PCLPointCloud2::Ptr cloud_filtered(new pcl::PCLPointCloud2());
-		//pcl::toPCLPointCloud2(*cloudFilteredY, *pointCloudConverted);
+		//pcl::toPCLPointCloud2(*pointcloud, *pointCloudConverted);
 		//pcl::VoxelGrid<pcl::PCLPointCloud2> sor;
 		//sor.setInputCloud(pointCloudConverted);
 		//sor.setLeafSize(0.01f, 0.01f, 0.01f);
@@ -318,7 +219,117 @@ int _tmain(int argc, _TCHAR* argv[])
 		//pcl::PointCloud<pcl::PointXYZ>::Ptr aux(new pcl::PointCloud<pcl::PointXYZ>());
 		//pcl::fromPCLPointCloud2(*cloud_filtered, *aux);
 		//// Show Point Cloud on Cloud Viewer
-		viewer.showCloud(pointcloud);
+		//viewer.showCloud(aux);
+
+		pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+		pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
+		// Create the segmentation object
+		pcl::SACSegmentation<pcl::PointXYZ> seg;
+		// Optional
+		seg.setOptimizeCoefficients(true);
+		// Mandatory
+		seg.setModelType(pcl::SACMODEL_PLANE);
+		seg.setMethodType(pcl::SAC_RANSAC);
+		seg.setDistanceThreshold(segThreshold);
+
+		seg.setInputCloud(pointcloud);
+		seg.segment(*inliers, *coefficients);
+		
+		for (size_t i = 0; i < inliers->indices.size(); ++i) {
+			viewcloud->points[inliers->indices[i]].r = 0;
+			viewcloud->points[inliers->indices[i]].g = 255;
+			viewcloud->points[inliers->indices[i]].b = 0;
+		}
+
+		viewer.showCloud(viewcloud);
+
+		/*
+ 			X filters limits:
+ 				V: 0x56
+ 				B: 0x42
+ 			Y filters limits:
+ 				A: 0x41
+ 				S: 0x53
+ 			Z filter limits:
+ 				Z: 0x5A
+ 				X: 0x58
+ 			*/
+ 
+ 		if (GetAsyncKeyState(0x56) & 0x8000) {
+ 			if (GetAsyncKeyState(VK_SHIFT))
+ 				x_1 -= step;
+ 			else
+ 				x_1 += step;
+ 		}
+ 		if (GetAsyncKeyState(0x42) & 0x8000) {
+ 			if (GetAsyncKeyState(VK_SHIFT))
+ 				x_2 -= step;
+ 			else
+ 				x_2 += step;
+ 		}
+ 
+ 		if (GetAsyncKeyState(0x41) & 0x8000) {
+ 			if (GetAsyncKeyState(VK_SHIFT))
+ 				y_1 -= step;
+ 			else
+ 				y_1 += step;
+ 		}
+ 		if (GetAsyncKeyState(0x53) & 0x8000) {
+ 			if (GetAsyncKeyState(VK_SHIFT))
+ 				y_2 -= step;
+ 			else
+ 				y_2 += step;
+ 		}
+ 
+ 		if (GetAsyncKeyState(0x5A) & 0x8000) {
+ 			if (GetAsyncKeyState(VK_SHIFT))
+ 				z_1 -= step;
+ 			else
+ 				z_1 += step;
+ 		}
+ 		if (GetAsyncKeyState(0x58) & 0x8000) {
+ 			if (GetAsyncKeyState(VK_SHIFT))
+ 				z_2 -= step;
+ 			else
+ 				z_2 += step;
+ 		}
+ 
+ 		if (GetAsyncKeyState(0x4E)) { // N
+ 			if (GetAsyncKeyState(VK_SHIFT))
+ 				nK -= kStep;
+ 			else
+ 				nK += kStep;
+ 		}
+ 
+ 		if (GetAsyncKeyState(VK_SPACE)) {
+ 			log = !log;
+ 		}
+ 
+ 		if (GetAsyncKeyState(0x44)) {
+ 			cout << "x: ";
+ 			cout << x_1;
+ 			cout << ", ";
+ 			cout << x_2;
+ 			cout << "  y: ";
+ 			cout << y_1;
+ 			cout << ", ";
+ 			cout << y_2;
+ 			cout << "  z: ";
+ 			cout << z_1;
+ 			cout << ", ";
+ 			cout << z_2;
+ 			cout << " nK: ";
+ 			cout << nK;
+ 			cout << "\n";
+ 		}
+		if (GetAsyncKeyState(VK_SPACE)) {
+			if (GetAsyncKeyState(VK_SHIFT))
+				segThreshold -= step;
+			else
+				segThreshold += step;
+			
+			//log = !log;
+		}
 
 		// Input Key ( Exit ESC key )
 		if (GetKeyState(VK_ESCAPE) < 0){
